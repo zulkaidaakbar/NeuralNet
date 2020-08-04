@@ -316,12 +316,7 @@ qd   = Q * D;
 qpd  = QP * D;   
 
 //
-/*
-kk_T = 0.5 * ( e / ( 1 - e ) ) * QQ;  
-kkp_T = kk_T;  
-kqp_T = ( QQ / ( sqrt( gg ) * sqrt( 1 + gg ) ) ) * sqrt ( (0.5 * e) / ( 1 - e ) ) * ( 1. + xb * t / QQ ) * sin(theta) * cos( RAD*phi );
-kd_T = -1.* kqp_T;
-dd_T = ( 1. - xi * xi ) * ( tmin - t );*/
+
 kk_T   = TProduct(K,K);
   kkp_T  = kk_T;
   kqp_T  = TProduct(K,QP);
@@ -347,11 +342,6 @@ bhBUU = (Gamma/t) * con_BUUBH * ( tau * ( F1 + F2 ) * ( F1 + F2 ) ) ;
 
 xbhUU = bhAUU + bhBUU;
 //
-/*
-AUUI = -4.0 * cos( RAD*phi ) / (kqp * kpqp) * ( ( QQ + t ) * ( 2.0 * ( kP + kpP ) * kk_T   + ( Pq * kqp_T ) + 2.* ( kpP * kqp ) - 2.* ( kP * kpqp ) ) + ( QQ - t + 4.* kd ) * Pqp * ( kkp_T + kqp_T - 2.* kkp ) );
-BUUI = 2.0 * xi * cos( RAD*phi ) / ( kqp * kpqp) * ( ( QQ + t ) * ( 2.* kk_T * ( kd + kpd ) + kqp_T * ( qd - kqp - kpqp + 2.*kkp ) + 2.* kqp * kpd - 2.* kpqp * kd ) + ( QQ - t + 4.* kd ) * ( ( kk_T - 2.* kkp ) * qpd - kkp * dd_T - 2.* kd_T * kqp ) ) / tau;
-CUUI = 2.0 * cos( RAD*phi ) / ( kqp * kpqp) * ( -1. * ( QQ + t ) * ( 2.* kkp - kpqp - kqp ) * kd_T + ( QQ - t + 4.* kd ) * ( ( kqp + kpqp ) * kd_T + dd_T * kkp ) );
-*/
 
 AUUI = -4.0 / (kqp * kpqp) * ( ( QQ + t ) * ( 2.0 * ( kP + kpP ) * kk_T   + ( Pq * kqp_T ) + 2.* ( kpP * kqp ) - 2.* ( kP * kpqp ) + kpqp * kP_T + kqp * kpP_T - 2.*kkp * kP_T ) +
                                                     ( QQ - t + 4.* kd ) * ( Pqp * ( kkp_T + kqp_T - 2.* kkp )  + 2.* kkp * qpP_T - kpqp * kP_T - kqp * kpP_T ) );
@@ -366,10 +356,6 @@ AUUI = -4.0 / (kqp * kpqp) * ( ( QQ + t ) * ( 2.0 * ( kP + kpP ) * kk_T   + ( Pq
 con_AUUI = AUUI * GeV2nb * jcob;
 con_BUUI = BUUI * GeV2nb * jcob;
 con_CUUI = CUUI * GeV2nb * jcob;
-
-/*iAUU = (Gamma/(-t * QQ)) * cos( RAD*phi ) * con_AUUI * ( F1 * p1 + tau * F2 * p0 );
-iBUU = (Gamma/(-t * QQ)) * cos( RAD*phi ) * con_BUUI * tau * ( F1 + F2 ) * ( p1 + p0 );
-iCUU = (Gamma/(-t * QQ)) * cos( RAD*phi ) * con_CUUI * ( F1 + F2 ) * p2;*/
 
 iAUU = (Gamma/(-t * QQ)) * cos( phi * RAD ) * con_AUUI * ( F1 * p1 + tau * F2 * p0 );
   //iBUU = (Gamma/(-t * QQ)) * cos( phi * RAD ) * con_BUUI * tau * ( F1 + F2 ) * ( ReH + ReE );
@@ -540,31 +526,6 @@ double Neuron::beta2 = 0.999;
 double Neuron::epsilon = pow(10,-8);
 
 //  ************************************************************************************************
-
-
-/*void Neuron::updateInputWeights(Layer &prevLayer)
-{
-	// The weights to be updated are in the Connection container
-	// in the nuerons in the preceding layer
-
-	for(unsigned n = 0; n < prevLayer.size(); ++n)
-	{
-		Neuron &neuron = prevLayer[n];
-		double oldDeltaWeight = neuron.m_outputWeights[m_myIndex].deltaWeight;
-
-		double newDeltaWeight = 
-				// Individual input, magnified by the gradient and train rate:
-				eta
-				* neuron.getOutputVal()
-				* m_gradient
-				// Also add momentum = a fraction of the previous delta weight
-				+ alpha
-				* oldDeltaWeight;
-		neuron.m_outputWeights[m_myIndex].deltaWeight = newDeltaWeight;
-		//neuron.m_outputWeights[m_myIndex].weight += newDeltaWeight;
-		neuron.m_outputWeights[m_myIndex].weight = neuron.m_outputWeights[m_myIndex].weight - newDeltaWeight;
-	}
-}*/
 
 void Neuron::updateInputWeights(Layer &prevLayer)
 {
@@ -847,7 +808,7 @@ int main()
 	vector<double> inputVals, targetVals, resultVals;
 	int trainingPass = 0;
         
-	while(!trainData.isEof() /*&& trainingPass < 360000*/)
+	while(!trainData.isEof() /*&& trainingPass < 360000*/) // additional requirement if we want to limit the number of epoch
 	{
 
 		++trainingPass;
@@ -858,8 +819,7 @@ int main()
 		if(trainData.getNextInputs(inputVals) != topology[0])
 			break;
 		showVectorVals(": Inputs :", inputVals);
-//for (int i =0; i<1000; i++)
-//         {
+
 		myNet.feedForward(inputVals);
 
 		// Collect the net's actual results:
@@ -878,11 +838,9 @@ int main()
 		//     << myNet.getRecentAverageError() << endl;
 		//cout <<resultVals[0]<<" "<<resultVals[1]<<" "<<resultVals[2]<<endl;
 		cout<<model(inputVals, resultVals) - targetVals[0]<<endl;
-                /*cout<<output_delta_derivative (inputVals, resultVals,targetVals[0],0)<<endl; 
-		cout<<output_delta_derivative (inputVals, resultVals,targetVals[1],1)<<endl; 
-		cout<<output_delta_derivative (inputVals, resultVals,targetVals[2],2)<<endl; */
+                
     
-//	   }
+
 	}
 
 	cout << endl << "Done" << endl;
